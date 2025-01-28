@@ -1,0 +1,74 @@
+# Python bindings for the MOPAC API
+from ctypes import *
+
+# Define the API data structures
+class c_mopac_system(Structure):
+    _fields_ = [("natom", c_int),
+                ("natom_move", c_int),
+                ("charge", c_int),
+                ("spin", c_int),
+                ("model", c_int),
+                ("epsilon", c_double),
+                ("atom", POINTER(c_int)),
+                ("coord", POINTER(c_double)),
+                ("nlattice", c_int),
+                ("nlattice_move", c_int),
+                ("pressure", c_double),
+                ("lattice", POINTER(c_double)),
+                ("tolerance", c_double),
+                ("max_time", c_int)]
+class c_mopac_properties(Structure):
+    _fields_ = [("heat", c_double),
+                ("dipole", c_double * 3),
+                ("charge", POINTER(c_double)),
+                ("coord_update", POINTER(c_double)),
+                ("coord_deriv", POINTER(c_double)),
+                ("freq", POINTER(c_double)),
+                ("disp", POINTER(c_double)),
+                ("bond_index", POINTER(c_int)),
+                ("bond_atom", POINTER(c_int)),
+                ("bond_order", POINTER(c_double)),
+                ("lattice_update", POINTER(c_double)),
+                ("lattice_deriv", POINTER(c_double)),
+                ("stress", c_double * 6),
+                ("nerror", c_int),
+                ("error_msg", POINTER(c_char_p))]
+class c_mopac_state(Structure):
+    _fields_ = [("mpack", c_int),
+                ("uhf", c_int),
+                ("pa", POINTER(c_double)),
+                ("pb", POINTER(c_double))]
+class c_mozyme_state(Structure):
+    _fields_ = [("numat", c_int),
+                ("nbonds", POINTER(c_int)),
+                ("ibonds", POINTER(c_int)),
+                ("iorbs", POINTER(c_int)),
+                ("noccupied", c_int),
+                ("ncf", POINTER(c_int)),
+                ("nvirtual", c_int),
+                ("nce", POINTER(c_int)),
+                ("icocc_dim", c_int),
+                ("icocc", POINTER(c_int)),
+                ("icvir_dim", c_int),
+                ("icvir", POINTER(c_int)),
+                ("cocc_dim", c_int),
+                ("cocc", POINTER(c_double)),
+                ("cvir_dim", c_int),
+                ("cvir", POINTER(c_double))]
+
+# Load the MOPAC shared library (what is the best portable approach?)
+libmopac = CDLL("libmopac.dylib")
+
+# Specify the argument lists of the API functions
+libmopac.mopac_scf.argtypes = [POINTER(c_mopac_system), POINTER(c_mopac_state), POINTER(c_mopac_properties)]
+libmopac.mopac_relax.argtypes = [POINTER(c_mopac_system), POINTER(c_mopac_state), POINTER(c_mopac_properties)]
+libmopac.mopac_vibe.argtypes = [POINTER(c_mopac_system), POINTER(c_mopac_state), POINTER(c_mopac_properties)]
+libmopac.mozyme_scf.argtypes = [POINTER(c_mopac_system), POINTER(c_mozyme_state), POINTER(c_mopac_properties)]
+libmopac.mozyme_relax.argtypes = [POINTER(c_mopac_system), POINTER(c_mozyme_state), POINTER(c_mopac_properties)]
+libmopac.mozyme_vibe.argtypes = [POINTER(c_mopac_system), POINTER(c_mozyme_state), POINTER(c_mopac_properties)]
+libmopac.create_mopac_state.argtypes = [POINTER(c_mopac_state)]
+libmopac.create_mozyme_state.argtypes = [POINTER(c_mozyme_state)]
+libmopac.destroy_mopac_properties.argtypes = [POINTER(c_mopac_properties)]
+libmopac.destroy_mopac_state.argtypes = [POINTER(c_mopac_state)]
+libmopac.destroy_mozyme_state.argtypes = [POINTER(c_mozyme_state)]
+libmopac.run_mopac_from_input.argtypes = [c_char_p]
