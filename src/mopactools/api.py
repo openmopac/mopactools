@@ -421,9 +421,4 @@ def from_input(filepath):
     if not os.path.isfile(filepath):
         raise ValueError("argument of from_input is not a valid file")
     status = binding.libmopac.run_mopac_from_input(ctypes.create_string_buffer(os.fsencode(filepath)))
-    filename = os.fsdecode(filepath)
-    if filename[-4:].upper() == ".MOP" or filename[-4:].upper() == ".DAT" or filename[-4:].upper() == ".ARC":
-        outpath = filename[:-4] + ".out"
-    else:
-        outpath = filename + ".out"
-    return (outpath, not bool(status))
+    return bool(status)
