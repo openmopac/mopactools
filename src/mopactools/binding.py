@@ -13,6 +13,8 @@
 # limitations under the License.
 
 # Python bindings for the MOPAC API
+import os
+import itertools
 from ctypes import *
 
 # Define the API data structures
@@ -70,8 +72,24 @@ class c_mozyme_state(Structure):
                 ("cvir_dim", c_int),
                 ("cvir", POINTER(c_double))]
 
-# Load the MOPAC shared library (what is the best portable approach?)
-libmopac = CDLL("libmopac.dylib")
+# Load the MOPAC shared library
+mopactools_path = os.path.dirname(__file__)
+libmopac_name = ["libmopac.so", "libmopac.dylib", "libmopac.dll", "mopac.dll"]
+libmopac_dir = [os.path.join(mopactools_path, "lib"), None]
+for name, dir in itertools.product(libmopac_name, libmopac_dir):
+    if dir is None:
+        libmopac_path = name
+    else:
+        libmopac_path = os.path.join(dir, name)
+    try:
+        libmopac = CDLL(libmopac_path)
+        break
+    except OSError:
+        pass
+try:
+    libmopac
+except NameError:
+    raise OSError("MOPAC library could not be found in the system path or mopactools/lib directory")
 
 # Specify the argument lists of the API functions
 libmopac.mopac_scf.argtypes = [POINTER(c_mopac_system), POINTER(c_mopac_state), POINTER(c_mopac_properties)]
@@ -86,3 +104,4 @@ libmopac.destroy_mopac_properties.argtypes = [POINTER(c_mopac_properties)]
 libmopac.destroy_mopac_state.argtypes = [POINTER(c_mopac_state)]
 libmopac.destroy_mozyme_state.argtypes = [POINTER(c_mozyme_state)]
 libmopac.run_mopac_from_input.argtypes = [c_char_p]
+libmopac.get_mopac_version.argtypes = [c_char_p]

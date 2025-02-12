@@ -23,6 +23,16 @@ from . import binding
 
 class mopac_system:
     model_dict = { "PM7":0, "PM6-D3H4":1, "PM6-ORG":2, "PM6":3, "AM1":4, "RM1":5 }
+    periodic_table = { "H":1, "He":2, "Li":3, "Be":4, "B":5, "C":6, "N":7, "O":8, "F":9, "Ne":10,
+        "Na":11, "Mg":12, "Al":13, "Si":14, "P":15, "S":16, "Cl":17, "Ar":18, "K":19, "Ca":20,
+        "Sc":21, "Ti":22, "V":23, "Cr":24, "Mn":25, "Fe":26, "Co":27, "Ni":28, "Cu":29, "Zn":30,
+        "Ga":31, "Ge":32, "As":33, "Se":34, "Br":35, "Kr":36, "Rb":37, "Sr":38, "Y":39, "Zr":40,
+        "Nb":41, "Mo":42, "Tc":43, "Ru":44, "Rh":45, "Pd":46, "Ag":47, "Cd":48, "In":49, "Sn":50,
+        "Sb":51, "Te":52, "I":53, "Xe":54, "Cs":55, "Ba":56, "La":57, "Ce":58, "Pr":59, "Nd":60,
+        "Pm":61, "Sm":62, "Eu":63, "Gd":64, "Tb":65, "Dy":66, "Ho":67, "Er":68, "Tm":69, "Yb":70,
+        "Lu":71, "Hf":72, "Ta":73, "W":74, "Re":75, "Os":76, "Ir":77, "Pt":78, "Au":79, "Hg":80,
+        "Tl":81, "Pb":82, "Bi":83, "Po":84, "At":85, "Rn":86, "Fr":87, "Ra":88, "Ac":89, "Th":90,
+        "Pa":91, "U":92, "Np":93, "Pu":94, "Am":95, "Cm":96, "Bk":97, "Cf":98 }
     def __init__(self, c_system=None):
         if c_system is None:
             self._as_parameter_ = None
@@ -31,8 +41,8 @@ class mopac_system:
             self.charge = 0
             self.spin = 0
             self.model = "PM7"
-            self.epsilon = 0.0
-            self.atom = np.array([], dtype=np.int32)
+            self.epsilon = 1.0
+            self.atom = []
             self.coord = np.array([], dtype=np.float64)
             self.nlattice = 0
             self.nlattice_move = 0
@@ -77,6 +87,20 @@ class mopac_system:
             else:
                 self._as_parameter_[0].model = self.model
             self._as_parameter_[0].epsilon = self.epsilon
+            if not isinstance(self.atom, np.ndarray):
+                old_atom = self.atom
+                self.atom = np.empty(self.natom, dtype=np.int32)
+                for i in range(self.natom):
+                    if isinstance(old_atom[i], int):
+                        self.atom[i] = old_atom[i]
+                    else:
+                        if len(old_atom[i].strip()) == 2:
+                            element = f"{old_atom[i][0].upper()}{old_atom[i][1].lower()}"
+                        elif len(old_atom[i].strip()) == 1:
+                            element = f"{old_atom[i][0].upper()}"
+                        else:
+                            raise TypeError(f"unknown element symbol, {old_atom[i]}, in mopac_system")
+                        self.atom[i] = self.periodic_table[element]
             self._as_parameter_[0].atom = self.atom.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
             self._as_parameter_[0].coord = self.coord.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
             self._as_parameter_[0].nlattice = self.nlattice
@@ -87,50 +111,63 @@ class mopac_system:
             self._as_parameter_[0].max_time = self.max_time
 
 class mopac_properties:
-    def __init__(self, c_properties, system):
-        if not isinstance(c_properties, binding.c_mopac_properties):
-            raise TypeError("mismatch between mopac_properties and c_mopac_properties")
-        if not isinstance(system, (binding.c_mopac_system, mopac_system)):
-            raise TypeError("mopac_properties initialization needs a valid mopac_system for size information")
-        self._as_parameter_ = ctypes.pointer(c_properties)
-        self.heat = c_properties.heat
-        self.dipole = np.ctypeslib.as_array(c_properties.dipole)
-        if system.natom > 0:
-            self.charge = np.ctypeslib.as_array(c_properties.charge, (system.natom,))
+    def __init__(self, c_properties=None, system=None):
+        if c_properties is None:
+            self._as_parameter_ = None
+            self.dipole = None
+            self.charge = None
+            self.coord_update = None
+            self.coord_deriv = None
+            self.freq = None
+            self.disp = None
+            self.bond_order = None
+            self.lattice_update = None
+            self.lattice_deriv = None
+            self.stress = None
         else:
-            self.charge = np.array([], dtype=np.float64)
-        if system.natom_move > 0:
-            self.coord_update = np.ctypeslib.as_array(c_properties.coord_update, (3*system.natom_move,))
-            self.coord_deriv = np.ctypeslib.as_array(c_properties.coord_deriv, (3*system.natom_move,))
-        else:
-            self.coord_update = np.array([], dtype=np.float64)
-            self.coord_deriv = np.array([], dtype=np.float64)
-        if c_properties.freq:
-            self.freq = np.ctypeslib.as_array(c_properties.freq, (3*system.natom_move,))
-        else:
-            self.freq = np.array([], dtype=np.float64)
-        if c_properties.disp:
-            self.disp = np.ctypeslib.as_array(c_properties.disp, (3*system.natom_move, 3*system.natom_move))
-        else:
-            self.disp = np.array([], dtype=np.float64)
-        bo_indptr = np.ctypeslib.as_array(c_properties.bond_index, (system.natom+1,))
-        if bo_indptr[-1] > 0:
-            bo_indices = np.ctypeslib.as_array(c_properties.bond_atom, (bo_indptr[-1],))
-            bo_data = np.ctypeslib.as_array(c_properties.bond_order, (bo_indptr[-1],))
-        else:
-            bo_indices = np.array([], dtype=np.int32)
-            bo_data = np.array([], dtype=np.float64)
-        self.bond_order = sp.sparse.csc_matrix((bo_data, bo_indices, bo_indptr), shape=(system.natom, system.natom))
-        if system.nlattice_move > 0:
-            self.lattice_update = np.ctypeslib.as_array(c_properties.lattice_update, (3*system.nlattice_move,))
-            self.lattice_deriv = np.ctypeslib.as_array(c_properties.lattice_deriv, (3*system.nlattice_move,))
-        else:
-            self.lattice_update = np.array([], dtype=np.float64)
-            self.lattice_deriv = np.array([], dtype=np.float64)
-        self.stress = np.ctypeslib.as_array(c_properties.stress)
-        self.error_msg = []
-        for i in range(c_properties.nerror):
-            self.error_msg.append(c_properties.error_msg[i].decode().split('\x00', 1)[0])
+            if not isinstance(c_properties, binding.c_mopac_properties):
+                raise TypeError("mismatch between mopac_properties and c_mopac_properties")
+            if not isinstance(system, (binding.c_mopac_system, mopac_system)):
+                raise TypeError("mopac_properties initialization needs a valid mopac_system for size information")
+            self._as_parameter_ = ctypes.pointer(c_properties)
+            self.heat = c_properties.heat
+            self.dipole = np.ctypeslib.as_array(c_properties.dipole)
+            if system.natom > 0:
+                self.charge = np.ctypeslib.as_array(c_properties.charge, (system.natom,))
+            else:
+                self.charge = np.array([], dtype=np.float64)
+            if system.natom_move > 0:
+                self.coord_update = np.ctypeslib.as_array(c_properties.coord_update, (3*system.natom_move,))
+                self.coord_deriv = np.ctypeslib.as_array(c_properties.coord_deriv, (3*system.natom_move,))
+            else:
+                self.coord_update = np.array([], dtype=np.float64)
+                self.coord_deriv = np.array([], dtype=np.float64)
+            if c_properties.freq:
+                self.freq = np.ctypeslib.as_array(c_properties.freq, (3*system.natom_move,))
+            else:
+                self.freq = np.array([], dtype=np.float64)
+            if c_properties.disp:
+                self.disp = np.ctypeslib.as_array(c_properties.disp, (3*system.natom_move, 3*system.natom_move))
+            else:
+                self.disp = np.array([], dtype=np.float64)
+            bo_indptr = np.ctypeslib.as_array(c_properties.bond_index, (system.natom+1,))
+            if bo_indptr[-1] > 0:
+                bo_indices = np.ctypeslib.as_array(c_properties.bond_atom, (bo_indptr[-1],))
+                bo_data = np.ctypeslib.as_array(c_properties.bond_order, (bo_indptr[-1],))
+            else:
+                bo_indices = np.array([], dtype=np.int32)
+                bo_data = np.array([], dtype=np.float64)
+            self.bond_order = sp.sparse.csc_matrix((bo_data, bo_indices, bo_indptr), shape=(system.natom, system.natom))
+            if system.nlattice_move > 0:
+                self.lattice_update = np.ctypeslib.as_array(c_properties.lattice_update, (3*system.nlattice_move,))
+                self.lattice_deriv = np.ctypeslib.as_array(c_properties.lattice_deriv, (3*system.nlattice_move,))
+            else:
+                self.lattice_update = np.array([], dtype=np.float64)
+                self.lattice_deriv = np.array([], dtype=np.float64)
+            self.stress = np.ctypeslib.as_array(c_properties.stress)
+            self.error_msg = []
+            for i in range(c_properties.nerror):
+                self.error_msg.append(c_properties.error_msg[i].value.decode('utf-8'))
     def detach(self):
         if self._as_parameter_ is not None:
             self.dipole = self.dipole.copy()
@@ -417,8 +454,13 @@ def vibe(system, state):
     state.update()
     return mopac_properties(c_properties, system)
 
-def from_input(filepath):
+def run_input(filepath):
     if not os.path.isfile(filepath):
-        raise ValueError("argument of from_input is not a valid file")
+        raise ValueError("argument of run_input is not a valid file")
     status = binding.libmopac.run_mopac_from_input(ctypes.create_string_buffer(os.fsencode(filepath)))
     return bool(status)
+
+def version():
+    buffer = ctypes.create_string_buffer(21)
+    binding.libmopac.get_mopac_version(buffer)
+    return buffer.value.decode('utf-8')
