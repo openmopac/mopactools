@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import scipy as sp
+import scipy
 import pytest
 import mopactools.api as api
 
@@ -51,7 +51,7 @@ def mopac_water_out():
     bond_index = np.array([0, 2, 4, 7])
     bond_atom = np.array([0, 2, 1, 2, 0, 1, 2])
     bond_order = np.array([0.896, 0.895, 0.896, 0.895, 0.895, 0.895, 1.791])
-    properties.bond_order = sp.sparse.csc_matrix((bond_order, bond_atom, bond_index), shape=(3, 3))
+    properties.bond_order = scipy.sparse.csc_matrix((bond_order, bond_atom, bond_index), shape=(3, 3))
     properties.lattice_update = np.array([], dtype=np.float64)
     properties.lattice_deriv = np.array([], dtype=np.float64)
     properties.error_msg = []

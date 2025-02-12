@@ -19,6 +19,7 @@ from ctypes import *
 
 # Define the API data structures
 class c_mopac_system(Structure):
+    """ ctypes binding of the mopac_system struct """
     _fields_ = [("natom", c_int),
                 ("natom_move", c_int),
                 ("charge", c_int),
@@ -34,6 +35,7 @@ class c_mopac_system(Structure):
                 ("tolerance", c_double),
                 ("max_time", c_int)]
 class c_mopac_properties(Structure):
+    """ ctypes binding of the mopac_properties struct """
     _fields_ = [("heat", c_double),
                 ("dipole", c_double * 3),
                 ("charge", POINTER(c_double)),
@@ -50,11 +52,13 @@ class c_mopac_properties(Structure):
                 ("nerror", c_int),
                 ("error_msg", POINTER(c_char_p))]
 class c_mopac_state(Structure):
+    """ ctypes binding of the mopac_state struct """
     _fields_ = [("mpack", c_int),
                 ("uhf", c_int),
                 ("pa", POINTER(c_double)),
                 ("pb", POINTER(c_double))]
 class c_mozyme_state(Structure):
+    """ ctypes binding of the mozyme_state struct """
     _fields_ = [("numat", c_int),
                 ("nbonds", POINTER(c_int)),
                 ("ibonds", POINTER(c_int)),
@@ -72,7 +76,7 @@ class c_mozyme_state(Structure):
                 ("cvir_dim", c_int),
                 ("cvir", POINTER(c_double))]
 
-# Load the MOPAC shared library
+# Load the MOPAC shared library, check all reasonable library names & paths
 mopactools_path = os.path.dirname(__file__)
 libmopac_name = ["libmopac.so", "libmopac.dylib", "libmopac.dll", "mopac.dll"]
 libmopac_dir = [os.path.join(mopactools_path, "lib"), None]
