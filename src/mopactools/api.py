@@ -213,15 +213,17 @@ class mopac_properties:
             self._as_parameter_ = ctypes.pointer(c_properties)
             self.heat = c_properties.heat
             self.dipole = np.ctypeslib.as_array(c_properties.dipole)
-            if system.natom > 0:
+            if c_properties.charge:
                 self.charge = np.ctypeslib.as_array(c_properties.charge, (system.natom,))
             else:
                 self.charge = np.array([], dtype=np.float64)
-            if system.natom_move > 0:
+            if c_properties.coord_update:
                 self.coord_update = np.ctypeslib.as_array(c_properties.coord_update, (3*system.natom_move,))
-                self.coord_deriv = np.ctypeslib.as_array(c_properties.coord_deriv, (3*system.natom_move,))
             else:
                 self.coord_update = np.array([], dtype=np.float64)
+            if c_properties.coord_deriv:
+                self.coord_deriv = np.ctypeslib.as_array(c_properties.coord_deriv, (3*system.natom_move,))
+            else:
                 self.coord_deriv = np.array([], dtype=np.float64)
             if c_properties.freq:
                 self.freq = np.ctypeslib.as_array(c_properties.freq, (3*system.natom_move,))
@@ -231,24 +233,31 @@ class mopac_properties:
                 self.disp = np.ctypeslib.as_array(c_properties.disp, (3*system.natom_move, 3*system.natom_move))
             else:
                 self.disp = np.array([], dtype=np.float64)
-            bo_indptr = np.ctypeslib.as_array(c_properties.bond_index, (system.natom+1,))
-            if bo_indptr[-1] > 0:
+            if c_properties.bond_index:
+                bo_indptr = np.ctypeslib.as_array(c_properties.bond_index, (system.natom+1,))
+            else:
+                bo_indptr = np.zeros(system.natom+1, dtype=np.int32)
+            if c_properties.bond_atom and bo_indptr[-1] > 0:
                 bo_indices = np.ctypeslib.as_array(c_properties.bond_atom, (bo_indptr[-1],))
-                bo_data = np.ctypeslib.as_array(c_properties.bond_order, (bo_indptr[-1],))
             else:
                 bo_indices = np.array([], dtype=np.int32)
+            if c_properties.bond_order and bo_indptr[-1] > 0:
+                bo_data = np.ctypeslib.as_array(c_properties.bond_order, (bo_indptr[-1],))
+            else:
                 bo_data = np.array([], dtype=np.float64)
             self.bond_order = scipy.sparse.csc_matrix((bo_data, bo_indices, bo_indptr), shape=(system.natom, system.natom))
-            if system.nlattice_move > 0:
+            if c_properties.lattice_update:
                 self.lattice_update = np.ctypeslib.as_array(c_properties.lattice_update, (3*system.nlattice_move,))
-                self.lattice_deriv = np.ctypeslib.as_array(c_properties.lattice_deriv, (3*system.nlattice_move,))
             else:
                 self.lattice_update = np.array([], dtype=np.float64)
+            if c_properties.lattice_deriv:
+                self.lattice_deriv = np.ctypeslib.as_array(c_properties.lattice_deriv, (3*system.nlattice_move,))
+            else:
                 self.lattice_deriv = np.array([], dtype=np.float64)
             self.stress = np.ctypeslib.as_array(c_properties.stress)
             self.error_msg = []
             for i in range(c_properties.nerror):
-                self.error_msg.append(c_properties.error_msg[i].value.decode('utf-8'))
+                self.error_msg.append(c_properties.error_msg[i].decode('utf-8'))
     def detach(self):
         if self._as_parameter_ is not None:
             self.dipole = self.dipole.copy()
@@ -268,7 +277,7 @@ class mopac_properties:
             binding.libmopac.destroy_mopac_properties(self)
 
 class mopac_state:
-    """Electronic ground state in a conventional MOPAC calculation"""
+    """Electronic ground state in a conventional MOPAC calculation
 
     Attributes
     ----------
@@ -285,7 +294,9 @@ class mopac_state:
     Methods
     -------
     attach()
-        Attach to a c_mopac_state instance that and move memory into MOPAC.
+        Attach to a c_mopac_state instance and move memory into MOPAC.
+    update()
+        Update the Python data to be consistent with the MOPAC data.
     detach()
         Detach from a c_mopac_state instance and move memory into Python.
     """
@@ -350,7 +361,7 @@ class mopac_state:
             binding.libmopac.destroy_mopac_state(self)
 
 class mozyme_state:
-    """Electronic ground state in a linear-scaling MOZYME calculation"""
+    """Electronic ground state in a linear-scaling MOZYME calculation
     
     Attributes
     ----------
@@ -383,7 +394,9 @@ class mozyme_state:
     Methods
     -------
     attach()
-        Attach to a c_mozyme_state instance that and move memory into MOPAC.
+        Attach to a c_mozyme_state instance and move memory into MOPAC.
+    update()
+        Update the Python data to be consistent with the MOPAC data.
     detach()
         Detach from a c_mozyme_state instance and move memory into Python.
     """
@@ -550,8 +563,8 @@ class mozyme_state:
         if self._as_parameter_ is not None:
             binding.libmopac.destroy_mozyme_state(self)
 
-def scf(system, state):
-    """Calculate an electronic ground state using a self-consistent field (SCF) cycle in MOPAC.
+def from_data(system, state, relax=False, vibe=False):
+    """Run a MOPAC calculation defined by the input data.
 
     Parameters
     ----------
@@ -560,103 +573,77 @@ def scf(system, state):
     state : mopac_state or mozyme_state
         The electronic ground state that the calculation is initialized to.
         The type is used to determine whether to run a MOPAC or MOZYME calculation.
+    relax : bool, optional
+        Relax the positions of the atoms into a local energy minimum.
+    vibe : bool, optional
+        Perform a vibrational calculation on a geometry that is in a local energy minimum.
 
     Returns
     -------
     properties : mopac_properties
         The physical properties calculated by MOPAC,
-        except vibrational frequencies, properties.freq, and displacement vectors, properties.disp,
-        which are both set to None.
+        with vibrational frequencies, *properties.freq*, and displacement vectors, *properties.disp*,
+        set to None unless *vibe* is True.
     """
     if not isinstance(system, mopac_system):
-        raise TypeError("1st argument of scf must be a mopac_system")
+        raise TypeError("1st argument of from_data must be a mopac_system")
     if not isinstance(state, (mopac_state, mozyme_state)):
-        raise TypeError("2nd argument of scf must be a mopac_state or mozyme_state")
+        raise TypeError("2nd argument of from_data must be a mopac_state or mozyme_state")
     c_properties = binding.c_mopac_properties()
     system.attach()
     state.attach()
-    if isinstance(state, mopac_state):
-        binding.libmopac.mopac_scf(system, state, ctypes.byref(c_properties))
-    else:
-        binding.libmopac.mozyme_scf(system, state, ctypes.byref(c_properties))
+    if relax == True:
+        if isinstance(state, mopac_state):
+            binding.libmopac.mopac_relax(system, state, ctypes.byref(c_properties))
+        else:
+            binding.libmopac.mozyme_relax(system, state, ctypes.byref(c_properties))
+    elif vibe == False:
+        if isinstance(state, mopac_state):
+            binding.libmopac.mopac_scf(system, state, ctypes.byref(c_properties))
+        else:
+            binding.libmopac.mozyme_scf(system, state, ctypes.byref(c_properties))
+    if vibe == True:
+        if relax == True:
+            old_coord = np.empty(3*system.natom)
+            old_coord = system.coord
+            system.coord[:3*system.natom_move] = np.ctypeslib.as_array(c_properties.coord_update, (3*system.natom_move,))
+            binding.libmopac.destroy_mopac_properties(c_properties)
+        if isinstance(state, mopac_state):
+            binding.libmopac.mopac_vibe(system, state, ctypes.byref(c_properties))
+        else:
+            binding.libmopac.mozyme_vibe(system, state, ctypes.byref(c_properties))
+        if relax == True:
+            system.coord = old_coord
     state.update()
+    print(c_properties.error_msg[0])
     return mopac_properties(c_properties, system)
 
-def relax(system, state):
-    """Calculate an atomistic ground state by relaxing the geometry in MOPAC.
+def from_file(input_path):
+    """Run a MOPAC calculation from an input file that is equivalent to running MOPAC on the command line.
+
+    For example, an input file at the path ``dir/name.mop`` should generate an ouput file at the path ``dir/name.out``.
+    MOPAC also accepts input files with the ``.dat`` extension or no file extension, and it can also use the input block
+    at the bottom of an archive file (``.arc``) that was generated by a previous MOPAC calculation if a ``.arc`` file is given as an input file.
+    In addition to a primary output file (``.out``), MOPAC may generate other outputs such as an archive file (``.arc``) and
+    a machine-readable output data file (``.aux``) that can be requested using the ``AUX`` keyword.
 
     Parameters
     ----------
-    system : mopac_system
-        The description of the atomistic system to be calculated.
-    state : mopac_state or mozyme_state
-        The electronic ground state that the calculation is initialized to.
-        The type is used to determine whether to run a MOPAC or MOZYME calculation.
+    input_path : path-like
+        The path to a MOPAC input file.
 
     Returns
     -------
-    properties : mopac_properties
-        The physical properties calculated by MOPAC,
-        except vibrational frequencies, properties.freq, and displacement vectors, properties.disp,
-        which are both set to None.
+    status : bool
+        Truth value indicating whether or not an error occured during the MOPAC calculation.
     """
-    if not isinstance(system, mopac_system):
-        raise TypeError("1st argument of relax must be a mopac_system")
-    if not isinstance(state, (mopac_state, mozyme_state)):
-        raise TypeError("2nd argument of relax must be a mopac_state or mozyme_state")
-    c_properties = binding.c_mopac_properties()
-    system.attach()
-    state.attach()
-    if isinstance(state, mopac_state):
-        binding.libmopac.mopac_relax(system, state, ctypes.byref(c_properties))
-    else:
-        binding.libmopac.mozyme_relax(system, state, ctypes.byref(c_properties))
-    state.update()
-    return mopac_properties(c_properties, system)
-
-def vibe(system, state):
-    """Calculate the vibrational properties of a ground-state geometry in MOPAC.
-
-    Parameters
-    ----------
-    system : mopac_system
-        The description of the atomistic system to be calculated.
-    state : mopac_state or mozyme_state
-        The electronic ground state that the calculation is initialized to.
-        The type is used to determine whether to run a MOPAC or MOZYME calculation.
-
-    Returns
-    -------
-    properties : mopac_properties
-        The physical properties calculated by MOPAC,
-        including vibrational frequencies, properties.freq, and displacement vectors, properties.disp.
-    """
-    if not isinstance(system, mopac_system):
-        raise TypeError("1st argument of vibe must be a mopac_system")
-    if not isinstance(state, (mopac_state, mozyme_state)):
-        raise TypeError("2nd argument of vibe must be a mopac_state or mozyme_state")
-    c_properties = binding.c_mopac_properties()
-    system.attach()
-    state.attach()
-    if isinstance(state, mopac_state):
-        binding.libmopac.mopac_vibe(system, state, ctypes.byref(c_properties))
-    else:
-        binding.libmopac.mozyme_vibe(system, state, ctypes.byref(c_properties))
-    state.update()
-    return mopac_properties(c_properties, system)
-
-def run_input(filepath):
-    """Run a MOPAC calculation using the input file located at filepath.
-    This function is equivalent to running MOPAC on the command line.
-    For example, an input file at the path dir/name.mop should generate an ouput file at the path dir/name.out.
-    """
-    if not os.path.isfile(filepath):
-        raise ValueError("argument of run_input is not a valid file")
-    status = binding.libmopac.run_mopac_from_input(ctypes.create_string_buffer(os.fsencode(filepath)))
+    if not os.path.isfile(input_path):
+        raise ValueError("argument of from_file is not a valid file")
+    status = binding.libmopac.run_mopac_from_input(ctypes.create_string_buffer(os.fsencode(input_path)))
     return bool(status)
 
-def version():
-    """Return the version of MOPAC"""
-    buffer = ctypes.create_string_buffer(21)
-    binding.libmopac.get_mopac_version(buffer)
-    return buffer.value.decode('utf-8')
+buffer = ctypes.create_string_buffer(21)
+binding.libmopac.get_mopac_version(buffer)
+#: Semantic version number for the MOPAC shared library
+version = buffer.value.decode('utf-8')
+# In the future, it might make sense to put a minimum version test here

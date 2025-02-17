@@ -18,19 +18,19 @@ def setup_input():
                    ''')
     input.close()
     yield input_name, output_name
-    for file in [input_name, output_name, "text.arc"]:
+    for file in [input_name, output_name, "test.arc"]:
         try:
             os.remove(file)
         except FileNotFoundError:
             pass
 
-def test_run_input(setup_input):
+def test_from_file(setup_input):
     input_name, output_name = setup_input
-    error = api.run_input(input_name)
-    assert not error, "run_input caused an error"
+    error = api.from_file(input_name)
+    assert not error, "from_file caused an error"
     output = open(output_name, "r")
     output_txt = output.read()
-    assert "FINAL HEAT OF FORMATION =        -57.769" in output_txt, "run_input output file is missing results"
+    assert "FINAL HEAT OF FORMATION =        -57.769" in output_txt, "from_file output file is missing results"
 
 def mopac_water_in():
     system = api.mopac_system()
@@ -79,7 +79,7 @@ def property_distance(prop1, prop2):
 def test_mopac_scf():
     system = mopac_water_in()
     state = api.mopac_state()
-    properties = api.scf(system, state)
+    properties = api.from_data(system, state)
     ref = mopac_water_out()
     dist = property_distance(properties, ref)
     assert np.linalg.norm(dist, ord=np.inf) < 0.002, "mopac_scf calculation differs significantly from reference"
