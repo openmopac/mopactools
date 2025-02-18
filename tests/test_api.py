@@ -33,7 +33,7 @@ def test_from_file(setup_input):
     assert "FINAL HEAT OF FORMATION =        -57.769" in output_txt, "from_file output file is missing results"
 
 def mopac_water_in():
-    system = api.mopac_system()
+    system = api.MopacSystem()
     system.natom = 3
     system.natom_move = 3
     system.atom = ["H", "H", "O"]
@@ -41,7 +41,7 @@ def mopac_water_in():
     return system
 
 def mopac_water_out():
-    properties = api.mopac_properties()
+    properties = api.MopacProperties()
     properties.heat = -57.76975
     properties.coord_update = np.array([0.76, 0.59, 0, -0.76, 0.59, 0, 0, 0, 0])
     properties.coord_deriv = np.array([2.307865, 2.742432, 0, -2.307865, 2.711610, 0, 0, -5.454042, 0])
@@ -78,7 +78,7 @@ def property_distance(prop1, prop2):
 
 def test_mopac_scf():
     system = mopac_water_in()
-    state = api.mopac_state()
+    state = api.MopacState()
     properties = api.from_data(system, state)
     ref = mopac_water_out()
     dist = property_distance(properties, ref)

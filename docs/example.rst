@@ -8,10 +8,10 @@ A minimal example using the MOPAC API to calculate the electronic ground state o
     from mopactools import api
     import numpy as np
 
-    system = api.mopac_system()
+    system = api.MopacSystem()
     system.natom = 3
     system.atom = ["H", "H", "O"]
     system.coord = np.array([0.76, 0.59, 0, -0.76, 0.59, 0, 0, 0, 0])
-    state = api.mopac_state()
+    state = api.MopacState()
     properties = api.from_data(system, state)
     print("heat of formation = ", properties.heat)

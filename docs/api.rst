@@ -22,29 +22,32 @@ This functionality is accessed through the function:
 
 .. autofunction:: mopactools.api.from_data
 
-The Python data layout follows the underlying Fortran (with C bindings) data layout. There is a ``mopac_system`` object for the atomistic system data
-and computational options that define the calculation, a ``mopac_state`` or ``mozyme_state`` object that describes the electronic ground state at the beginning
-and end of the calculation, and a ``mopac_properties`` object that stores the important physical properties that were evaluated during the calculation.
-The ``mopac_system`` object is strictly an input that is not altered by the calculation, while the ``mopac_state`` and ``mozyme_state`` objects act as both
-inputs and outputs, so the input object is altered by the function call. Correspondingly, the ``mopac_properties`` object is strictly an output.
+The Python data layout follows the underlying Fortran (with C bindings) data layout. There is a ``MopacSystem`` object for the atomistic system data
+and computational options that define the calculation, a ``MopacState`` or ``MozymeState`` object that describes the electronic ground state at the beginning
+and end of the calculation, and a ``MopacProperties`` object that stores the important physical properties that were evaluated during the calculation.
+The ``MopacSystem`` object is strictly an input that is not altered by the calculation, while the ``MopacState`` and ``MozymeState`` objects act as both
+inputs and outputs, so the input object is altered by the function call. The initial value of ``MopacState`` or ``MozymeState`` is used as the initial guess
+for the self-consistent field (SCF) cycle, and the final value is the converged ground state at the end of the SCF cycle. An uninitialized ``MopacState`` or
+``MozymeState`` instance correspond to the default guesses for the electronic ground state (an atomic guess for MOPAC and a Lewis-bonded guess for MOZYME).
+The ``MopacProperties`` object is strictly an output, therefore it is returned by the API call rather than specified as a function argument.
 
 .. note::
-   The relaxed geometry of a system is stored in ``mopac_properties.coord_update`` rather than ``mopac_system.coord`` because ``mopac_system`` is not
+   The relaxed geometry of a system is stored in ``MopacProperties.coord_update`` rather than ``MopacSystem.coord`` because ``MopacSystem`` is not
    altered by calls to ``api.from_data``. The user has to update the geometry themselves if they want it to be used in subsequent calculations.
 
 The specification of this API data structures is as follows:
 
-.. autoclass:: mopactools.api.mopac_system
+.. autoclass:: mopactools.api.MopacSystem
 
-.. autoclass:: mopactools.api.mopac_state
+.. autoclass:: mopactools.api.MopacState
 
-.. autoclass:: mopactools.api.mozyme_state
+.. autoclass:: mopactools.api.MozymeState
 
-.. autoclass:: mopactools.api.mopac_properties
+.. autoclass:: mopactools.api.MopacProperties
 
 Finally, version information about the MOPAC shared library is provided by the module variable:
 
-.. autodata:: mopactools.api.version
+.. autodata:: mopactools.api.VERSION
    :annotation:
 
 .. warning::
