@@ -38,7 +38,8 @@ class mopac_system:
         For example, spin=0 is a singlet and spin=1 is a triplet for an even number of electrons,
         and spin=0 is a doublet for an odd number of electrons.
     model : {"PM7", "PM6-D3H4", "PM6-ORG", "PM6", "AM1", "RM1"} or int
-        The semiempirical model used for the calculation, or the corresponding int from model_dict.
+        The semiempirical model used for the calculation,
+        or the corresponding integer value in the base API layer.
     epsilon : float
         The dielectric constant of the implicit solvent that the atomistic system is embedded in.
         There is no implicit solvent if epsilon=1.0, the dielectric constant of empty vacuum.
@@ -615,7 +616,6 @@ def from_data(system, state, relax=False, vibe=False):
         if relax == True:
             system.coord = old_coord
     state.update()
-    print(c_properties.error_msg[0])
     return mopac_properties(c_properties, system)
 
 def from_file(input_path):
