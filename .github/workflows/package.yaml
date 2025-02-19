@@ -15,14 +15,20 @@ jobs:
         include:
           - osname: mac
             arc: zip
+            lib: dylib
+            libdir: lib
             util: unzip
             os: macos-13
           - osname: linux
             arc: tar.gz
+            lib: so
+            libdir: lib
             util: "tar -xvzf"
             os: ubuntu-latest
           - osname: win
             arc: zip
+            lib: dll
+            libdir: bin
             util: unzip
             os: windows-latest
 
@@ -35,7 +41,7 @@ jobs:
           curl -OL https://github.com/openmopac/mopac/releases/download/v${{ env.MOPAC_VERSION }}/mopac-${{ env.MOPAC_VERSION }}-${{ matrix.osname }}.${{ matrix.arc }}
           ${{ matrix.util }} mopac-${{ env.MOPAC_VERSION }}-${{ matrix.osname }}.${{ matrix.arc }}
           mkdir src/mopactools/lib
-          cp mopac-${{ env.MOPAC_VERSION }}-${{ matrix.osname }}/lib/* src/mopactools/lib
+          cp mopac-${{ env.MOPAC_VERSION }}-${{ matrix.osname }}/${{ matrix.libdir }}/*.${{ matrix.lib }} src/mopactools/lib
           ls src/mopactools/lib
 
       - name: Build package
