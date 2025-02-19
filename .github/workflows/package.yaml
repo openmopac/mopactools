@@ -1,0 +1,52 @@
+name: PyPI wheel packaging
+
+on: workflow_dispatch
+
+env:
+  MOPAC_VERSION: 23.1.2
+
+jobs:
+  build-wheel:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-13, ubuntu-latest, windows-latest]
+        include:
+          - osname: mac
+            arc: zip
+            util: unzip
+            os: macos-13
+          - osname: linux
+            arc: tar.gz
+            util: "tar -xvzf"
+            os: ubuntu-latest
+          - osname: win
+            arc: zip
+            util: unzip
+            os: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download the shared library from GitHub Release
+        shell: bash
+        run: |
+          curl -OL https://github.com/openmopac/mopac/releases/download/v${{ env.MOPAC_VERSION }}/mopac-${{ env.MOPAC_VERSION }}-${{ matrix.osname }}.${{ matrix.arc }}
+          ${{ matrix.util }} mopac-${{ env.MOPAC_VERSION }}-${{ matrix.osname }}.${{ matrix.arc }}
+          mkdir src/mopactools/lib
+          cp mopac-${{ env.MOPAC_VERSION }}-${{ matrix.osname }}.${{ matrix.arc }}/lib/* src/mopactools/lib
+
+      - name: Build package
+        shell: bash
+        run: python -m build
+
+      - name: Run tests
+        shell: bash
+        run: pytest
+
+      - name: Save wheel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-wheel
+          path: dist
