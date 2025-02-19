@@ -16,6 +16,7 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
+    "Development Status :: 4 - Beta",
 ]
 license = { text="Apache-2.0" }
 
@@ -26,6 +27,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/openmopac/mopactools"
+Documentation = "https://openmopac.github.io/mopactools/"
 Issues = "https://github.com/openmopac/mopactools/issues"
 
 [tool.setuptools.package-data]
