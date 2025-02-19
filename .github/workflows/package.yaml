@@ -14,21 +14,21 @@ jobs:
         os: [macos-13, ubuntu-latest, windows-latest]
         include:
           - osname: mac
-            platform: macosx
+            platform: macosx-10.13-universal2
             arc: zip
             lib: dylib
             libdir: lib
             util: unzip
             os: macos-13
           - osname: linux
-            platform: manylinux
+            platform: linux-x86_64
             arc: tar.gz
             lib: so
             libdir: lib
             util: "tar -xvzf"
             os: ubuntu-latest
           - osname: win
-            platform: win32
+            platform: win-amd64
             arc: zip
             lib: dll
             libdir: bin
