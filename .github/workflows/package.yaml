@@ -14,18 +14,21 @@ jobs:
         os: [macos-13, ubuntu-latest, windows-latest]
         include:
           - osname: mac
+            platform: macosx
             arc: zip
             lib: dylib
             libdir: lib
             util: unzip
             os: macos-13
           - osname: linux
+            platform: manylinux
             arc: tar.gz
             lib: so
             libdir: lib
             util: "tar -xvzf"
             os: ubuntu-latest
           - osname: win
+            platform: win32
             arc: zip
             lib: dll
             libdir: bin
@@ -48,7 +51,7 @@ jobs:
         shell: bash
         run: |
           pip install build
-          python -m build
+          python -m build -C--build-option=--plat-name=${{ matrix.platform }}
 
       - name: Run tests
         shell: bash
