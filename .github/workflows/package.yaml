@@ -22,7 +22,7 @@ jobs:
             util: unzip
             os: macos-13
           - osname: linux
-            platform: linux-x86_64
+            platform: manylinux_2_17_x86_64
             arc: tar.gz
             lib: so*
             libdir: lib
