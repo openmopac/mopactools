@@ -62,6 +62,12 @@ jobs:
           pip install pytest
           pytest
 
+      - name: Deploy to PyPI
+        shell: bash
+        run: |
+          pip install twine
+          python -m twine upload --repository testpypi dist/*
+
       - name: Save wheel artifacts
         uses: actions/upload-artifact@v4
         with:
