@@ -46,7 +46,10 @@ jobs:
 
       - name: Run tests
         shell: bash
-        run: pytest
+        run: |
+          pip install .
+          pip install pytest
+          pytest
 
       - name: Save wheel artifacts
         uses: actions/upload-artifact@v4
