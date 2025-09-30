@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mopactools"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
   { name="Jonathan Moussa", email="jemoussa@vt.edu" },
 ]
@@ -23,6 +23,7 @@ license = { text="Apache-2.0" }
 dependencies = [
     "numpy",
     "scipy",
+    "packaging",
 ]
 
 [project.urls]
