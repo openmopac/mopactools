@@ -19,6 +19,7 @@ import math
 import ctypes
 import numpy as np
 import scipy
+from packaging.version import Version, InvalidVersion
 from . import binding
 
 class MopacSystem:
@@ -646,4 +647,9 @@ buffer = ctypes.create_string_buffer(21)
 binding.libmopac.get_mopac_version(buffer)
 #: Semantic version number of the MOPAC shared library
 VERSION = buffer.value.decode('utf-8')
-# In the future, it might make sense to put a minimum version test here
+MIN_VERSION = "23.2"
+try:
+    if Version(VERSION) < Version(MIN_VERSION):
+        raise ValueError(f"MOPAC shared library version ({VERSION}) is older than the minimum required version ({MIN_VERSION}).")
+except InvalidVersion:
+    print(f"WARNING: MOPAC shared library has a non-standard version ({VERSION}) and might not be compatible with mopactools.")

@@ -33,7 +33,6 @@ jobs:
   build-wheel:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    environment: pypi-deployment
     strategy:
       matrix:
         os: [macos-13, ubuntu-latest, windows-latest]
