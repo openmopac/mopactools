@@ -1,7 +1,9 @@
 name: "Sphinx: Render docs"
 
-on: push
-
+on:
+  push:
+    branches:
+      - main
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,10 +16,10 @@ jobs:
 
     - name: Get MOPAC shared library
       run: |
-        curl -OL https://github.com/openmopac/mopac/releases/download/v23.1.2/mopac-23.1.2-linux.tar.gz
-        tar -xvzf mopac-23.1.2-linux.tar.gz
+        curl -OL https://github.com/openmopac/mopac/releases/download/v23.2/mopac-23.2-linux.tar.gz
+        tar -xvzf mopac-23.2-linux.tar.gz
         mkdir src/mopactools/lib
-        cp mopac-23.1.2-linux/lib/* src/mopactools/lib
+        cp mopac-23.2-linux/lib/* src/mopactools/lib
 
     - name: Build HTML
       uses: ammaraskar/sphinx-action@master
