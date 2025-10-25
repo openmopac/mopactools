@@ -166,3 +166,6 @@ cython_debug/
 *.so
 *.dll
 src/mopactools/lib
+
+# Mac stuff
+.DS_Store
