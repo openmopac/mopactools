@@ -647,7 +647,7 @@ buffer = ctypes.create_string_buffer(21)
 binding.libmopac.get_mopac_version(buffer)
 #: Semantic version number of the MOPAC shared library
 VERSION = buffer.value.decode('utf-8')
-MIN_VERSION = "23.2"
+MIN_VERSION = "23.2.1"
 try:
     if Version(VERSION) < Version(MIN_VERSION):
         raise ValueError(f"MOPAC shared library version ({VERSION}) is older than the minimum required version ({MIN_VERSION}).")
