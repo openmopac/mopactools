@@ -9,7 +9,7 @@ on:
       - main
 
 env:
-  MOPAC_VERSION: 23.2.1
+  MOPAC_VERSION: 23.2.2
 
 jobs:
   build-src:
