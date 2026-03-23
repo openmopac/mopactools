@@ -421,9 +421,10 @@ class MozymeState:
                 raise TypeError("mismatch between MozymeState and c_mozyme_state")
             self._as_parameter_ = ctypes.pointer(c_state)
             self.update()
+
     def attach(self):
         if self._as_parameter_ is None:
-            self._as_parameter_ = ctypes.pointer(binding.c_mopac_state())
+            self._as_parameter_ = ctypes.pointer(binding.c_mozyme_state())
             self._as_parameter_[0].numat = self.numat
             self._as_parameter_[0].noccupied = len(self.ncf)
             self._as_parameter_[0].nvirtual = len(self.nce)
