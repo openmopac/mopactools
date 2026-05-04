@@ -9,7 +9,7 @@ on:
       - main
 
 env:
-  MOPAC_VERSION: 23.2.2
+  MOPAC_VERSION: 23.2.5
 
 jobs:
   build-src:
@@ -35,7 +35,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, ubuntu-latest, windows-latest]
+        os: [macos-15-intel, ubuntu-latest, windows-latest]
         include:
           - osname: mac
             platform: macosx-10.13-universal2
@@ -43,7 +43,7 @@ jobs:
             lib: dylib
             libdir: lib
             util: unzip
-            os: macos-13
+            os: macos-15-intel
           - osname: linux
             platform: manylinux_2_17_x86_64
             arc: tar.gz
